@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   ShieldCheck,
@@ -28,6 +28,7 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+import { supabase } from "./lib/supabaseClient";
 
 const menu = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -41,30 +42,33 @@ const menu = [
   { id: "crm", label: "CRM / Follow-up", icon: PhoneCall },
 ];
 
-const segurados = [
+const seguradosMock = [
   {
+    id: "mock-1",
     nome: "Mariana Oliveira",
-    documento: "123.456.789-00",
+    cpf_cnpj: "123.456.789-00",
     telefone: "(11) 99999-1010",
     email: "mariana@email.com",
     status: "Ativo",
-    interesse: "Seguro Auto",
+    perfil_cliente: "Seguro Auto",
   },
   {
+    id: "mock-2",
     nome: "Construtora Norte LTDA",
-    documento: "12.345.678/0001-90",
+    cpf_cnpj: "12.345.678/0001-90",
     telefone: "(11) 3333-2020",
     email: "financeiro@construtora.com",
     status: "Renovação",
-    interesse: "Riscos de Engenharia",
+    perfil_cliente: "Riscos de Engenharia",
   },
   {
+    id: "mock-3",
     nome: "Lucas Pereira",
-    documento: "987.654.321-00",
+    cpf_cnpj: "987.654.321-00",
     telefone: "(11) 98888-3030",
     email: "lucas@email.com",
     status: "Lead",
-    interesse: "Seguro Vida",
+    perfil_cliente: "Seguro Vida",
   },
 ];
 
@@ -162,6 +166,8 @@ function badgeClass(status) {
     Renovação: "bg-purple-500/15 text-purple-300 border-purple-400/30",
     "A vencer": "bg-orange-500/15 text-orange-300 border-orange-400/30",
     "A receber": "bg-orange-500/15 text-orange-300 border-orange-400/30",
+    Pendente: "bg-rose-500/15 text-rose-300 border-rose-400/30",
+    Inativo: "bg-slate-500/15 text-slate-300 border-slate-400/30",
   };
 
   return classes[status] || "bg-white/10 text-slate-300 border-white/20";
@@ -169,8 +175,12 @@ function badgeClass(status) {
 
 function Badge({ children }) {
   return (
-    <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${badgeClass(children)}`}>
-      {children}
+    <span
+      className={`rounded-full border px-3 py-1 text-xs font-semibold ${badgeClass(
+        children
+      )}`}
+    >
+      {children || "Não informado"}
     </span>
   );
 }
@@ -183,12 +193,14 @@ function Card({ title, value, detail, icon: Icon }) {
       className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.06] p-5 shadow-2xl backdrop-blur"
     >
       <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-cyan-400/20 blur-2xl" />
+
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm text-slate-400">{title}</p>
           <h3 className="mt-2 text-2xl font-black text-white">{value}</h3>
           <p className="mt-2 text-xs text-slate-500">{detail}</p>
         </div>
+
         <div className="rounded-2xl bg-cyan-400 p-3 text-slate-950 shadow-lg shadow-cyan-500/20">
           <Icon size={22} />
         </div>
@@ -205,6 +217,7 @@ function Header({ title, subtitle, button }) {
           <ShieldCheck size={14} />
           Gestão Seguros 360
         </div>
+
         <h2 className="text-2xl font-black text-white md:text-3xl">{title}</h2>
         <p className="mt-1 max-w-2xl text-sm text-slate-400">{subtitle}</p>
       </div>
@@ -231,13 +244,21 @@ function SearchBox({ placeholder }) {
   );
 }
 
-function Dashboard() {
+function Dashboard({ seguradosLista }) {
   const totalComissoes = comissoes.reduce(
     (soma, item) => soma + (item.premioLiquido * item.percentual) / 100,
     0
   );
 
   const receita = apolices.reduce((soma, item) => soma + item.premio, 0);
+
+  const totalLeads = seguradosLista.filter(
+    (item) => item.status === "Lead"
+  ).length;
+
+  const totalAtivos = seguradosLista.filter(
+    (item) => item.status === "Ativo"
+  ).length;
 
   return (
     <div>
@@ -248,25 +269,91 @@ function Dashboard() {
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card title="Segurados" value={segurados.length} detail="Clientes e leads cadastrados" icon={UsersRound} />
-        <Card title="Propostas" value={propostas.length} detail="Cotações em andamento" icon={ClipboardList} />
-        <Card title="Apólices" value={apolices.length} detail="Contratos registrados" icon={FileCheck2} />
-        <Card title="Comissões" value={moeda(totalComissoes)} detail="Previsão calculada" icon={BadgeDollarSign} />
-        <Card title="Receita estimada" value={moeda(receita)} detail="Prêmio total em apólices" icon={TrendingUp} />
-        <Card title="Apólices a vencer" value="1" detail="Prioridade de renovação" icon={CalendarClock} />
-        <Card title="Comissões recebidas" value={moeda(252)} detail="Valores confirmados" icon={WalletCards} />
-        <Card title="Sinistros abertos" value="2" detail="Ocorrências em acompanhamento" icon={AlertTriangle} />
+        <Card
+          title="Segurados"
+          value={seguradosLista.length}
+          detail="Clientes e leads cadastrados"
+          icon={UsersRound}
+        />
+
+        <Card
+          title="Leads"
+          value={totalLeads}
+          detail="Possíveis clientes em prospecção"
+          icon={UsersRound}
+        />
+
+        <Card
+          title="Clientes ativos"
+          value={totalAtivos}
+          detail="Segurados com relacionamento ativo"
+          icon={ShieldCheck}
+        />
+
+        <Card
+          title="Propostas"
+          value={propostas.length}
+          detail="Cotações em andamento"
+          icon={ClipboardList}
+        />
+
+        <Card
+          title="Apólices"
+          value={apolices.length}
+          detail="Contratos registrados"
+          icon={FileCheck2}
+        />
+
+        <Card
+          title="Comissões"
+          value={moeda(totalComissoes)}
+          detail="Previsão calculada"
+          icon={BadgeDollarSign}
+        />
+
+        <Card
+          title="Receita estimada"
+          value={moeda(receita)}
+          detail="Prêmio total em apólices"
+          icon={TrendingUp}
+        />
+
+        <Card
+          title="Apólices a vencer"
+          value="1"
+          detail="Prioridade de renovação"
+          icon={CalendarClock}
+        />
+
+        <Card
+          title="Comissões recebidas"
+          value={moeda(252)}
+          detail="Valores confirmados"
+          icon={WalletCards}
+        />
+
+        <Card
+          title="Sinistros abertos"
+          value="2"
+          detail="Ocorrências em acompanhamento"
+          icon={AlertTriangle}
+        />
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-5 shadow-2xl">
           <h3 className="font-bold text-white">Receita e comissões</h3>
-          <p className="mb-4 text-sm text-slate-400">Evolução mensal estimada</p>
+          <p className="mb-4 text-sm text-slate-400">
+            Evolução mensal estimada
+          </p>
 
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartReceita}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.08)" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="rgba(255,255,255,.08)"
+                />
                 <XAxis dataKey="mes" stroke="#94a3b8" />
                 <YAxis stroke="#94a3b8" />
                 <Tooltip
@@ -278,8 +365,20 @@ function Dashboard() {
                   }}
                   formatter={(value) => moeda(value)}
                 />
-                <Area type="monotone" dataKey="receita" stroke="#22d3ee" fill="#22d3ee33" strokeWidth={3} />
-                <Area type="monotone" dataKey="comissao" stroke="#a78bfa" fill="#a78bfa33" strokeWidth={3} />
+                <Area
+                  type="monotone"
+                  dataKey="receita"
+                  stroke="#22d3ee"
+                  fill="#22d3ee33"
+                  strokeWidth={3}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="comissao"
+                  stroke="#a78bfa"
+                  fill="#a78bfa33"
+                  strokeWidth={3}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -287,12 +386,17 @@ function Dashboard() {
 
         <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-5 shadow-2xl">
           <h3 className="font-bold text-white">Status das propostas</h3>
-          <p className="mb-4 text-sm text-slate-400">Funil comercial por etapa</p>
+          <p className="mb-4 text-sm text-slate-400">
+            Funil comercial por etapa
+          </p>
 
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartStatus}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.08)" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="rgba(255,255,255,.08)"
+                />
                 <XAxis dataKey="status" stroke="#94a3b8" />
                 <YAxis stroke="#94a3b8" />
                 <Tooltip
@@ -303,7 +407,11 @@ function Dashboard() {
                     color: "#fff",
                   }}
                 />
-                <Bar dataKey="total" fill="#22d3ee" radius={[12, 12, 0, 0]} />
+                <Bar
+                  dataKey="total"
+                  fill="#22d3ee"
+                  radius={[12, 12, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -313,7 +421,7 @@ function Dashboard() {
   );
 }
 
-function TabelaSegurados() {
+function TabelaSegurados({ seguradosLista, loading, erro }) {
   return (
     <div>
       <Header
@@ -324,34 +432,76 @@ function TabelaSegurados() {
 
       <SearchBox placeholder="Buscar por nome, CPF/CNPJ, telefone, e-mail ou status..." />
 
+      {loading && (
+        <div className="mb-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4 text-sm text-cyan-200">
+          Carregando segurados do Supabase...
+        </div>
+      )}
+
+      {erro && (
+        <div className="mb-4 rounded-2xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-200">
+          {erro}
+        </div>
+      )}
+
+      {!loading && seguradosLista.length === 0 && (
+        <div className="mb-4 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-200">
+          Nenhum segurado encontrado. Cadastre dados no Supabase para aparecerem
+          aqui.
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.05] shadow-2xl">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-white/[0.06] text-xs uppercase tracking-wider text-slate-400">
-            <tr>
-              <th className="px-5 py-4">Nome</th>
-              <th className="px-5 py-4">CPF/CNPJ</th>
-              <th className="px-5 py-4">Contato</th>
-              <th className="px-5 py-4">Interesse</th>
-              <th className="px-5 py-4">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/10 text-slate-200">
-            {segurados.map((item) => (
-              <tr key={item.documento} className="hover:bg-white/[0.04]">
-                <td className="px-5 py-4 font-semibold text-white">{item.nome}</td>
-                <td className="px-5 py-4">{item.documento}</td>
-                <td className="px-5 py-4">
-                  <div>{item.telefone}</div>
-                  <div className="text-xs text-slate-500">{item.email}</div>
-                </td>
-                <td className="px-5 py-4">{item.interesse}</td>
-                <td className="px-5 py-4">
-                  <Badge>{item.status}</Badge>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[860px] text-left text-sm">
+            <thead className="bg-white/[0.06] text-xs uppercase tracking-wider text-slate-400">
+              <tr>
+                <th className="px-5 py-4">Nome</th>
+                <th className="px-5 py-4">CPF/CNPJ</th>
+                <th className="px-5 py-4">Contato</th>
+                <th className="px-5 py-4">Tipo</th>
+                <th className="px-5 py-4">Perfil / Interesse</th>
+                <th className="px-5 py-4">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody className="divide-y divide-white/10 text-slate-200">
+              {seguradosLista.map((item) => (
+                <tr
+                  key={item.id || item.cpf_cnpj || item.email}
+                  className="hover:bg-white/[0.04]"
+                >
+                  <td className="px-5 py-4 font-semibold text-white">
+                    {item.nome || "Sem nome"}
+                  </td>
+
+                  <td className="px-5 py-4">
+                    {item.cpf_cnpj || "Não informado"}
+                  </td>
+
+                  <td className="px-5 py-4">
+                    <div>{item.telefone || "Sem telefone"}</div>
+                    <div className="text-xs text-slate-500">
+                      {item.email || "Sem e-mail"}
+                    </div>
+                  </td>
+
+                  <td className="px-5 py-4">
+                    {item.tipo_pessoa || "Não informado"}
+                  </td>
+
+                  <td className="px-5 py-4">
+                    {item.perfil_cliente || "Não informado"}
+                  </td>
+
+                  <td className="px-5 py-4">
+                    <Badge>{item.status}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -370,18 +520,33 @@ function TabelaPropostas() {
 
       <div className="grid gap-4 lg:grid-cols-3">
         {propostas.map((item) => (
-          <div key={`${item.cliente}-${item.seguro}`} className="rounded-3xl border border-white/10 bg-white/[0.05] p-5 shadow-2xl">
+          <div
+            key={`${item.cliente}-${item.seguro}`}
+            className="rounded-3xl border border-white/10 bg-white/[0.05] p-5 shadow-2xl"
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="font-bold text-white">{item.cliente}</h3>
                 <p className="text-sm text-slate-400">{item.seguro}</p>
               </div>
+
               <Badge>{item.status}</Badge>
             </div>
 
             <div className="mt-5 space-y-2 text-sm text-slate-300">
-              <p>Seguradora: <span className="font-semibold text-white">{item.seguradora}</span></p>
-              <p>Valor do prêmio: <span className="font-semibold text-white">{moeda(item.premio)}</span></p>
+              <p>
+                Seguradora:{" "}
+                <span className="font-semibold text-white">
+                  {item.seguradora}
+                </span>
+              </p>
+
+              <p>
+                Valor do prêmio:{" "}
+                <span className="font-semibold text-white">
+                  {moeda(item.premio)}
+                </span>
+              </p>
             </div>
           </div>
         ))}
@@ -397,10 +562,15 @@ function ModuloSimples({ title, subtitle }) {
 
       <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-10 text-center shadow-2xl">
         <ShieldCheck className="mx-auto text-cyan-300" size={48} />
-        <h3 className="mt-4 text-xl font-bold text-white">Módulo preparado para expansão</h3>
+
+        <h3 className="mt-4 text-xl font-bold text-white">
+          Módulo preparado para expansão
+        </h3>
+
         <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">
-          Esta tela já está reservada no sistema. O próximo passo será conectar formulários,
-          Supabase e regras de negócio específicas para este módulo.
+          Esta tela já está reservada no sistema. O próximo passo será conectar
+          formulários, Supabase e regras de negócio específicas para este
+          módulo.
         </p>
       </div>
     </div>
@@ -409,43 +579,89 @@ function ModuloSimples({ title, subtitle }) {
 
 export default function App() {
   const [active, setActive] = useState("dashboard");
+  const [seguradosData, setSeguradosData] = useState([]);
+  const [loadingSegurados, setLoadingSegurados] = useState(false);
+  const [erroSegurados, setErroSegurados] = useState("");
 
-  const activeItem = useMemo(() => menu.find((item) => item.id === active), [active]);
+  useEffect(() => {
+    async function carregarSegurados() {
+      setLoadingSegurados(true);
+      setErroSegurados("");
+
+      const { data, error } = await supabase
+        .from("segurados")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Erro ao carregar segurados:", error);
+        setErroSegurados(
+          "Não foi possível carregar os segurados do Supabase. Usando dados de exemplo."
+        );
+        setSeguradosData(seguradosMock);
+      } else {
+        setSeguradosData(data || []);
+      }
+
+      setLoadingSegurados(false);
+    }
+
+    carregarSegurados();
+  }, []);
+
+  const activeItem = useMemo(
+    () => menu.find((item) => item.id === active),
+    [active]
+  );
 
   const pages = {
-    dashboard: <Dashboard />,
-    segurados: <TabelaSegurados />,
+    dashboard: <Dashboard seguradosLista={seguradosData} />,
+
+    segurados: (
+      <TabelaSegurados
+        seguradosLista={seguradosData}
+        loading={loadingSegurados}
+        erro={erroSegurados}
+      />
+    ),
+
     propostas: <TabelaPropostas />,
+
     apolices: (
       <ModuloSimples
         title="Apólices"
         subtitle="Gestão de apólices emitidas, vigentes, canceladas, renovadas e a vencer."
       />
     ),
+
     renovacoes: (
       <ModuloSimples
         title="Renovações"
         subtitle="Alertas para apólices vencendo em 30 dias, 15 dias, vencidas e clientes sem renovação."
       />
     ),
+
     sinistros: (
       <ModuloSimples
         title="Sinistros"
         subtitle="Acompanhamento de ocorrências, documentação, status e apólice vinculada."
       />
     ),
+
     comissoes: (
       <ModuloSimples
         title="Comissões"
         subtitle="Controle de comissões previstas, recebidas, pendentes e canceladas."
       />
     ),
+
     seguradoras: (
       <ModuloSimples
         title="Seguradoras Parceiras"
         subtitle="Cadastro de seguradoras, contatos comerciais, ramos atendidos e comissão padrão."
       />
     ),
+
     crm: (
       <ModuloSimples
         title="CRM / Follow-up"
@@ -467,8 +683,11 @@ export default function App() {
           <div className="rounded-2xl bg-cyan-400 p-3 text-slate-950 shadow-lg shadow-cyan-500/20">
             <ShieldCheck size={26} />
           </div>
+
           <div>
-            <h1 className="text-lg font-black text-white">Gestão Seguros 360</h1>
+            <h1 className="text-lg font-black text-white">
+              Gestão Seguros 360
+            </h1>
             <p className="text-xs text-slate-500">Corretoras • Seguradoras</p>
           </div>
         </div>
@@ -503,6 +722,7 @@ export default function App() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">
                 Sistema Web Integrado
               </p>
+
               <h2 className="text-xl font-black text-white md:text-2xl">
                 {activeItem?.label || "Dashboard"}
               </h2>
@@ -524,7 +744,9 @@ export default function App() {
                   key={item.id}
                   onClick={() => setActive(item.id)}
                   className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold ${
-                    selected ? "bg-cyan-400 text-slate-950" : "bg-white/[0.06] text-slate-300"
+                    selected
+                      ? "bg-cyan-400 text-slate-950"
+                      : "bg-white/[0.06] text-slate-300"
                   }`}
                 >
                   <Icon size={15} />
