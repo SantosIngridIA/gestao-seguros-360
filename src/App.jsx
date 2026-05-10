@@ -16,6 +16,9 @@ import {
   TrendingUp,
   CalendarClock,
   WalletCards,
+  Pencil,
+  Trash2,
+  X,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -354,6 +357,11 @@ function TabelaSegurados({
   salvandoSegurado,
   mensagemFormulario,
   salvarSegurado,
+  seguradoEditando,
+  abrirNovoSegurado,
+  iniciarEdicaoSegurado,
+  excluirSegurado,
+  limparFormularioSegurado,
 }) {
   function atualizarCampo(campo, valor) {
     setFormSegurado((anterior) => ({
@@ -368,14 +376,16 @@ function TabelaSegurados({
         title="Clientes / Segurados"
         subtitle="Cadastro de leads, clientes ativos, clientes em renovação e inativos."
         button="Novo segurado"
-        onButtonClick={() => setMostrarFormulario(true)}
+        onButtonClick={abrirNovoSegurado}
       />
 
       {mostrarFormulario && (
         <div className="mb-6 rounded-3xl border border-cyan-400/20 bg-white/[0.06] p-5 shadow-2xl">
           <div className="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <div>
-              <h3 className="text-lg font-bold text-white">Novo segurado</h3>
+              <h3 className="text-lg font-bold text-white">
+                {seguradoEditando ? "Editar segurado" : "Novo segurado"}
+              </h3>
               <p className="text-sm text-slate-400">
                 Cadastre um lead, cliente ativo ou cliente em renovação.
               </p>
@@ -383,7 +393,10 @@ function TabelaSegurados({
 
             <button
               type="button"
-              onClick={() => setMostrarFormulario(false)}
+              onClick={() => {
+                setMostrarFormulario(false);
+                limparFormularioSegurado();
+                }}
               className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/[0.1]"
             >
               Fechar
@@ -450,7 +463,11 @@ function TabelaSegurados({
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/20 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Plus size={18} />
-                {salvandoSegurado ? "Salvando..." : "Salvar segurado"}
+                {salvandoSegurado
+                  ? "Salvando..."
+                  : seguradoEditando
+                  ? "Atualizar segurado"
+                  : "Salvar segurado"}
               </button>
             </div>
           </form>
@@ -488,6 +505,7 @@ function TabelaSegurados({
                 <th className="px-5 py-4">Tipo</th>
                 <th className="px-5 py-4">Perfil / Interesse</th>
                 <th className="px-5 py-4">Status</th>
+                <th className="px-5 py-4 text-right">Ações</th>
               </tr>
             </thead>
 
@@ -502,7 +520,31 @@ function TabelaSegurados({
                   </td>
                   <td className="px-5 py-4">{item.tipo_pessoa || "Não informado"}</td>
                   <td className="px-5 py-4">{item.perfil_cliente || "Não informado"}</td>
-                  <td className="px-5 py-4"><Badge>{item.status}</Badge></td>
+                  <td className="px-5 py-4">
+  <Badge>{item.status}</Badge>
+</td>
+
+<td className="px-5 py-4">
+  <div className="flex justify-end gap-2">
+    <button
+      type="button"
+      onClick={() => iniciarEdicaoSegurado(item)}
+      className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-400/20"
+    >
+      <Pencil size={14} />
+      Editar
+    </button>
+
+    <button
+      type="button"
+      onClick={() => excluirSegurado(item)}
+      className="inline-flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-red-400/20"
+    >
+      <Trash2 size={14} />
+      Excluir
+    </button>
+  </div>
+</td>
                 </tr>
               ))}
             </tbody>
@@ -595,6 +637,7 @@ export default function App() {
   const [mostrarFormularioSegurado, setMostrarFormularioSegurado] = useState(false);
   const [salvandoSegurado, setSalvandoSegurado] = useState(false);
   const [mensagemFormulario, setMensagemFormulario] = useState("");
+  const [seguradoEditando, setSeguradoEditando] = useState(null);
 
   const [formSegurado, setFormSegurado] = useState({
     nome: "",
@@ -644,63 +687,139 @@ export default function App() {
     carregarSegurados();
   }, []);
 
-  async function salvarSegurado(event) {
-    event.preventDefault();
-    setMensagemFormulario("");
+  function limparFormularioSegurado() {
+  setFormSegurado({
+    nome: "",
+    cpf_cnpj: "",
+    telefone: "",
+    email: "",
+    endereco: "",
+    data_nascimento: "",
+    tipo_pessoa: "Física",
+    perfil_cliente: "",
+    observacoes: "",
+    status: "Lead",
+  });
 
-    if (!formSegurado.nome.trim()) {
-      setMensagemFormulario("Informe o nome do segurado.");
-      return;
-    }
+  setSeguradoEditando(null);
+  setMensagemFormulario("");
+}
 
-    if (!supabase) {
-      setMensagemFormulario("Supabase não configurado. Não foi possível salvar no banco.");
-      return;
-    }
+function abrirNovoSegurado() {
+  limparFormularioSegurado();
+  setMostrarFormularioSegurado(true);
+}
 
-    setSalvandoSegurado(true);
+function iniciarEdicaoSegurado(segurado) {
+  setSeguradoEditando(segurado);
 
-    const payload = {
-      nome: formSegurado.nome.trim(),
-      cpf_cnpj: formSegurado.cpf_cnpj.trim() || null,
-      telefone: formSegurado.telefone.trim() || null,
-      email: formSegurado.email.trim() || null,
-      endereco: formSegurado.endereco.trim() || null,
-      data_nascimento: formSegurado.data_nascimento || null,
-      tipo_pessoa: formSegurado.tipo_pessoa || "Física",
-      perfil_cliente: formSegurado.perfil_cliente.trim() || null,
-      observacoes: formSegurado.observacoes.trim() || null,
-      status: formSegurado.status || "Lead",
-    };
+  setFormSegurado({
+    nome: segurado.nome || "",
+    cpf_cnpj: segurado.cpf_cnpj || "",
+    telefone: segurado.telefone || "",
+    email: segurado.email || "",
+    endereco: segurado.endereco || "",
+    data_nascimento: segurado.data_nascimento || "",
+    tipo_pessoa: segurado.tipo_pessoa || "Física",
+    perfil_cliente: segurado.perfil_cliente || "",
+    observacoes: segurado.observacoes || "",
+    status: segurado.status || "Lead",
+  });
 
-    const { error } = await supabase.from("segurados").insert([payload]);
+  setMensagemFormulario("");
+  setMostrarFormularioSegurado(true);
+}
 
-    if (error) {
-      console.error("Erro ao salvar segurado:", error);
-      setMensagemFormulario("Erro ao salvar segurado. Confira as permissões RLS no Supabase.");
-      setSalvandoSegurado(false);
-      return;
-    }
+async function excluirSegurado(segurado) {
+  const confirmar = window.confirm(
+    `Tem certeza que deseja excluir o segurado "${segurado.nome}"?`
+  );
 
-    setMensagemFormulario("Segurado cadastrado com sucesso!");
+  if (!confirmar) return;
 
-    setFormSegurado({
-      nome: "",
-      cpf_cnpj: "",
-      telefone: "",
-      email: "",
-      endereco: "",
-      data_nascimento: "",
-      tipo_pessoa: "Física",
-      perfil_cliente: "",
-      observacoes: "",
-      status: "Lead",
-    });
-
-    await carregarSegurados();
-    setSalvandoSegurado(false);
+  if (!supabase) {
+    alert("Supabase não configurado. Não foi possível excluir.");
+    return;
   }
 
+  const { error } = await supabase
+    .from("segurados")
+    .delete()
+    .eq("id", segurado.id);
+
+  if (error) {
+    console.error("Erro ao excluir segurado:", error);
+    alert("Erro ao excluir segurado. Confira as permissões RLS no Supabase.");
+    return;
+  }
+
+  await carregarSegurados();
+}
+  async function salvarSegurado(event) {
+  event.preventDefault();
+  setMensagemFormulario("");
+
+  if (!formSegurado.nome.trim()) {
+    setMensagemFormulario("Informe o nome do segurado.");
+    return;
+  }
+
+  if (!supabase) {
+    setMensagemFormulario(
+      "Supabase não configurado. Não foi possível salvar no banco."
+    );
+    return;
+  }
+
+  setSalvandoSegurado(true);
+
+  const payload = {
+    nome: formSegurado.nome.trim(),
+    cpf_cnpj: formSegurado.cpf_cnpj.trim() || null,
+    telefone: formSegurado.telefone.trim() || null,
+    email: formSegurado.email.trim() || null,
+    endereco: formSegurado.endereco.trim() || null,
+    data_nascimento: formSegurado.data_nascimento || null,
+    tipo_pessoa: formSegurado.tipo_pessoa || "Física",
+    perfil_cliente: formSegurado.perfil_cliente.trim() || null,
+    observacoes: formSegurado.observacoes.trim() || null,
+    status: formSegurado.status || "Lead",
+  };
+
+  let error;
+
+  if (seguradoEditando?.id) {
+    const response = await supabase
+      .from("segurados")
+      .update(payload)
+      .eq("id", seguradoEditando.id);
+
+    error = response.error;
+  } else {
+    const response = await supabase.from("segurados").insert([payload]);
+    error = response.error;
+  }
+
+  if (error) {
+    console.error("Erro ao salvar segurado:", error);
+    setMensagemFormulario(
+      "Erro ao salvar segurado. Confira as permissões RLS no Supabase."
+    );
+    setSalvandoSegurado(false);
+    return;
+  }
+
+  setMensagemFormulario(
+    seguradoEditando
+      ? "Segurado atualizado com sucesso!"
+      : "Segurado cadastrado com sucesso!"
+  );
+
+  limparFormularioSegurado();
+  await carregarSegurados();
+
+  setSalvandoSegurado(false);
+}
   const activeItem = useMemo(
     () => menu.find((item) => item.id === active),
     [active]
@@ -709,19 +828,24 @@ export default function App() {
   const pages = {
     dashboard: <Dashboard seguradosLista={seguradosData} />,
     segurados: (
-      <TabelaSegurados
-        seguradosLista={seguradosData}
-        loading={loadingSegurados}
-        erro={erroSegurados}
-        mostrarFormulario={mostrarFormularioSegurado}
-        setMostrarFormulario={setMostrarFormularioSegurado}
-        formSegurado={formSegurado}
-        setFormSegurado={setFormSegurado}
-        salvandoSegurado={salvandoSegurado}
-        mensagemFormulario={mensagemFormulario}
-        salvarSegurado={salvarSegurado}
-      />
-    ),
+  <TabelaSegurados
+    seguradosLista={seguradosData}
+    loading={loadingSegurados}
+    erro={erroSegurados}
+    mostrarFormulario={mostrarFormularioSegurado}
+    setMostrarFormulario={setMostrarFormularioSegurado}
+    formSegurado={formSegurado}
+    setFormSegurado={setFormSegurado}
+    salvandoSegurado={salvandoSegurado}
+    mensagemFormulario={mensagemFormulario}
+    salvarSegurado={salvarSegurado}
+    seguradoEditando={seguradoEditando}
+    abrirNovoSegurado={abrirNovoSegurado}
+    iniciarEdicaoSegurado={iniciarEdicaoSegurado}
+    excluirSegurado={excluirSegurado}
+    limparFormularioSegurado={limparFormularioSegurado}
+  />
+),
     propostas: <TabelaPropostas />,
     apolices: (
       <ModuloSimples
