@@ -33,6 +33,15 @@ import {
 } from "recharts";
 import { supabase } from "./lib/supabaseClient";
 
+console.log("URL Supabase:", import.meta.env.VITE_SUPABASE_URL);
+console.log(
+  "Chave Supabase existe:",
+  Boolean(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
+);
+
+console.log("URL Supabase:", import.meta.env.VITE_SUPABASE_URL);
+console.log("Chave Supabase existe:", !!import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+
 const menu = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "segurados", label: "Segurados", icon: UsersRound },
