@@ -583,31 +583,40 @@ export default function App() {
   const [loadingSegurados, setLoadingSegurados] = useState(false);
   const [erroSegurados, setErroSegurados] = useState("");
 
-  useEffect(() => {
-    async function carregarSegurados() {
-      setLoadingSegurados(true);
-      setErroSegurados("");
+ useEffect(() => {
+  async function carregarSegurados() {
+    setLoadingSegurados(true);
+    setErroSegurados("");
 
-      const { data, error } = await supabase
-        .from("segurados")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Erro ao carregar segurados:", error);
-        setErroSegurados(
-          "Não foi possível carregar os segurados do Supabase. Usando dados de exemplo."
-        );
-        setSeguradosData(seguradosMock);
-      } else {
-        setSeguradosData(data || []);
-      }
-
+    if (!supabase) {
+      setErroSegurados(
+        "Supabase não configurado. Usando dados de exemplo. Confira o arquivo .env.local."
+      );
+      setSeguradosData(seguradosMock);
       setLoadingSegurados(false);
+      return;
     }
 
-    carregarSegurados();
-  }, []);
+    const { data, error } = await supabase
+      .from("segurados")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Erro ao carregar segurados:", error);
+      setErroSegurados(
+        "Não foi possível carregar os segurados do Supabase. Usando dados de exemplo."
+      );
+      setSeguradosData(seguradosMock);
+    } else {
+      setSeguradosData(data || []);
+    }
+
+    setLoadingSegurados(false);
+  }
+
+  carregarSegurados();
+}, []);
 
   const activeItem = useMemo(
     () => menu.find((item) => item.id === active),
