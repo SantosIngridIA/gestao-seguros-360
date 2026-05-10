@@ -51,6 +51,7 @@ const seguradosMock = [
     email: "mariana@email.com",
     status: "Ativo",
     perfil_cliente: "Seguro Auto",
+    tipo_pessoa: "Física",
   },
   {
     id: "mock-2",
@@ -60,6 +61,7 @@ const seguradosMock = [
     email: "financeiro@construtora.com",
     status: "Renovação",
     perfil_cliente: "Riscos de Engenharia",
+    tipo_pessoa: "Jurídica",
   },
   {
     id: "mock-3",
@@ -69,6 +71,7 @@ const seguradosMock = [
     email: "lucas@email.com",
     status: "Lead",
     perfil_cliente: "Seguro Vida",
+    tipo_pessoa: "Física",
   },
 ];
 
@@ -209,7 +212,7 @@ function Card({ title, value, detail, icon: Icon }) {
   );
 }
 
-function Header({ title, subtitle, button }) {
+function Header({ title, subtitle, button, onButtonClick }) {
   return (
     <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
       <div>
@@ -223,7 +226,11 @@ function Header({ title, subtitle, button }) {
       </div>
 
       {button && (
-        <button className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/20 hover:bg-cyan-300">
+        <button
+          type="button"
+          onClick={onButtonClick}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-4 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/20 hover:bg-cyan-300"
+        >
           <Plus size={18} />
           {button}
         </button>
@@ -269,91 +276,27 @@ function Dashboard({ seguradosLista }) {
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card
-          title="Segurados"
-          value={seguradosLista.length}
-          detail="Clientes e leads cadastrados"
-          icon={UsersRound}
-        />
-
-        <Card
-          title="Leads"
-          value={totalLeads}
-          detail="Possíveis clientes em prospecção"
-          icon={UsersRound}
-        />
-
-        <Card
-          title="Clientes ativos"
-          value={totalAtivos}
-          detail="Segurados com relacionamento ativo"
-          icon={ShieldCheck}
-        />
-
-        <Card
-          title="Propostas"
-          value={propostas.length}
-          detail="Cotações em andamento"
-          icon={ClipboardList}
-        />
-
-        <Card
-          title="Apólices"
-          value={apolices.length}
-          detail="Contratos registrados"
-          icon={FileCheck2}
-        />
-
-        <Card
-          title="Comissões"
-          value={moeda(totalComissoes)}
-          detail="Previsão calculada"
-          icon={BadgeDollarSign}
-        />
-
-        <Card
-          title="Receita estimada"
-          value={moeda(receita)}
-          detail="Prêmio total em apólices"
-          icon={TrendingUp}
-        />
-
-        <Card
-          title="Apólices a vencer"
-          value="1"
-          detail="Prioridade de renovação"
-          icon={CalendarClock}
-        />
-
-        <Card
-          title="Comissões recebidas"
-          value={moeda(252)}
-          detail="Valores confirmados"
-          icon={WalletCards}
-        />
-
-        <Card
-          title="Sinistros abertos"
-          value="2"
-          detail="Ocorrências em acompanhamento"
-          icon={AlertTriangle}
-        />
+        <Card title="Segurados" value={seguradosLista.length} detail="Clientes e leads cadastrados" icon={UsersRound} />
+        <Card title="Leads" value={totalLeads} detail="Possíveis clientes em prospecção" icon={UsersRound} />
+        <Card title="Clientes ativos" value={totalAtivos} detail="Segurados com relacionamento ativo" icon={ShieldCheck} />
+        <Card title="Propostas" value={propostas.length} detail="Cotações em andamento" icon={ClipboardList} />
+        <Card title="Apólices" value={apolices.length} detail="Contratos registrados" icon={FileCheck2} />
+        <Card title="Comissões" value={moeda(totalComissoes)} detail="Previsão calculada" icon={BadgeDollarSign} />
+        <Card title="Receita estimada" value={moeda(receita)} detail="Prêmio total em apólices" icon={TrendingUp} />
+        <Card title="Apólices a vencer" value="1" detail="Prioridade de renovação" icon={CalendarClock} />
+        <Card title="Comissões recebidas" value={moeda(252)} detail="Valores confirmados" icon={WalletCards} />
+        <Card title="Sinistros abertos" value="2" detail="Ocorrências em acompanhamento" icon={AlertTriangle} />
       </div>
 
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-5 shadow-2xl">
           <h3 className="font-bold text-white">Receita e comissões</h3>
-          <p className="mb-4 text-sm text-slate-400">
-            Evolução mensal estimada
-          </p>
+          <p className="mb-4 text-sm text-slate-400">Evolução mensal estimada</p>
 
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartReceita}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="rgba(255,255,255,.08)"
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.08)" />
                 <XAxis dataKey="mes" stroke="#94a3b8" />
                 <YAxis stroke="#94a3b8" />
                 <Tooltip
@@ -365,20 +308,8 @@ function Dashboard({ seguradosLista }) {
                   }}
                   formatter={(value) => moeda(value)}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="receita"
-                  stroke="#22d3ee"
-                  fill="#22d3ee33"
-                  strokeWidth={3}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="comissao"
-                  stroke="#a78bfa"
-                  fill="#a78bfa33"
-                  strokeWidth={3}
-                />
+                <Area type="monotone" dataKey="receita" stroke="#22d3ee" fill="#22d3ee33" strokeWidth={3} />
+                <Area type="monotone" dataKey="comissao" stroke="#a78bfa" fill="#a78bfa33" strokeWidth={3} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -386,17 +317,12 @@ function Dashboard({ seguradosLista }) {
 
         <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-5 shadow-2xl">
           <h3 className="font-bold text-white">Status das propostas</h3>
-          <p className="mb-4 text-sm text-slate-400">
-            Funil comercial por etapa
-          </p>
+          <p className="mb-4 text-sm text-slate-400">Funil comercial por etapa</p>
 
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartStatus}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="rgba(255,255,255,.08)"
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.08)" />
                 <XAxis dataKey="status" stroke="#94a3b8" />
                 <YAxis stroke="#94a3b8" />
                 <Tooltip
@@ -407,11 +333,7 @@ function Dashboard({ seguradosLista }) {
                     color: "#fff",
                   }}
                 />
-                <Bar
-                  dataKey="total"
-                  fill="#22d3ee"
-                  radius={[12, 12, 0, 0]}
-                />
+                <Bar dataKey="total" fill="#22d3ee" radius={[12, 12, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -421,14 +343,119 @@ function Dashboard({ seguradosLista }) {
   );
 }
 
-function TabelaSegurados({ seguradosLista, loading, erro }) {
+function TabelaSegurados({
+  seguradosLista,
+  loading,
+  erro,
+  mostrarFormulario,
+  setMostrarFormulario,
+  formSegurado,
+  setFormSegurado,
+  salvandoSegurado,
+  mensagemFormulario,
+  salvarSegurado,
+}) {
+  function atualizarCampo(campo, valor) {
+    setFormSegurado((anterior) => ({
+      ...anterior,
+      [campo]: valor,
+    }));
+  }
+
   return (
     <div>
       <Header
         title="Clientes / Segurados"
         subtitle="Cadastro de leads, clientes ativos, clientes em renovação e inativos."
         button="Novo segurado"
+        onButtonClick={() => setMostrarFormulario(true)}
       />
+
+      {mostrarFormulario && (
+        <div className="mb-6 rounded-3xl border border-cyan-400/20 bg-white/[0.06] p-5 shadow-2xl">
+          <div className="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-center">
+            <div>
+              <h3 className="text-lg font-bold text-white">Novo segurado</h3>
+              <p className="text-sm text-slate-400">
+                Cadastre um lead, cliente ativo ou cliente em renovação.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setMostrarFormulario(false)}
+              className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/[0.1]"
+            >
+              Fechar
+            </button>
+          </div>
+
+          {mensagemFormulario && (
+            <div className="mb-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/10 p-4 text-sm text-cyan-200">
+              {mensagemFormulario}
+            </div>
+          )}
+
+          <form onSubmit={salvarSegurado} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <Input label="Nome" value={formSegurado.nome} onChange={(v) => atualizarCampo("nome", v)} required placeholder="Nome completo ou razão social" />
+            <Input label="CPF/CNPJ" value={formSegurado.cpf_cnpj} onChange={(v) => atualizarCampo("cpf_cnpj", v)} placeholder="000.000.000-00 ou 00.000.000/0000-00" />
+            <Input label="Telefone" value={formSegurado.telefone} onChange={(v) => atualizarCampo("telefone", v)} placeholder="(11) 99999-9999" />
+            <Input label="E-mail" type="email" value={formSegurado.email} onChange={(v) => atualizarCampo("email", v)} placeholder="cliente@email.com" />
+
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">Tipo de pessoa</label>
+              <select
+                value={formSegurado.tipo_pessoa}
+                onChange={(e) => atualizarCampo("tipo_pessoa", e.target.value)}
+                className="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400/60"
+              >
+                <option value="Física">Física</option>
+                <option value="Jurídica">Jurídica</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">Status</label>
+              <select
+                value={formSegurado.status}
+                onChange={(e) => atualizarCampo("status", e.target.value)}
+                className="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none focus:border-cyan-400/60"
+              >
+                <option value="Lead">Lead</option>
+                <option value="Ativo">Ativo</option>
+                <option value="Renovação">Renovação</option>
+                <option value="Inativo">Inativo</option>
+              </select>
+            </div>
+
+            <Input label="Perfil / Interesse" value={formSegurado.perfil_cliente} onChange={(v) => atualizarCampo("perfil_cliente", v)} placeholder="Seguro Auto, Vida, Empresarial..." />
+            <Input label="Endereço" value={formSegurado.endereco} onChange={(v) => atualizarCampo("endereco", v)} placeholder="Cidade, bairro ou endereço completo" />
+            <Input label="Data de nascimento" type="date" value={formSegurado.data_nascimento} onChange={(v) => atualizarCampo("data_nascimento", v)} />
+
+            <div className="md:col-span-2 xl:col-span-3">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">Observações</label>
+              <textarea
+                value={formSegurado.observacoes}
+                onChange={(e) => atualizarCampo("observacoes", e.target.value)}
+                placeholder="Observações comerciais, histórico inicial, preferências ou informações importantes..."
+                rows={4}
+                className="w-full resize-none rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-400/60"
+              />
+            </div>
+
+            <div className="md:col-span-2 xl:col-span-3">
+              <button
+                type="submit"
+                disabled={salvandoSegurado}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/20 hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Plus size={18} />
+                {salvandoSegurado ? "Salvando..." : "Salvar segurado"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <SearchBox placeholder="Buscar por nome, CPF/CNPJ, telefone, e-mail ou status..." />
 
@@ -446,8 +473,7 @@ function TabelaSegurados({ seguradosLista, loading, erro }) {
 
       {!loading && seguradosLista.length === 0 && (
         <div className="mb-4 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-200">
-          Nenhum segurado encontrado. Cadastre dados no Supabase para aparecerem
-          aqui.
+          Nenhum segurado encontrado. Cadastre dados no Supabase para aparecerem aqui.
         </div>
       )}
 
@@ -467,42 +493,40 @@ function TabelaSegurados({ seguradosLista, loading, erro }) {
 
             <tbody className="divide-y divide-white/10 text-slate-200">
               {seguradosLista.map((item) => (
-                <tr
-                  key={item.id || item.cpf_cnpj || item.email}
-                  className="hover:bg-white/[0.04]"
-                >
-                  <td className="px-5 py-4 font-semibold text-white">
-                    {item.nome || "Sem nome"}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    {item.cpf_cnpj || "Não informado"}
-                  </td>
-
+                <tr key={item.id || item.cpf_cnpj || item.email} className="hover:bg-white/[0.04]">
+                  <td className="px-5 py-4 font-semibold text-white">{item.nome || "Sem nome"}</td>
+                  <td className="px-5 py-4">{item.cpf_cnpj || "Não informado"}</td>
                   <td className="px-5 py-4">
                     <div>{item.telefone || "Sem telefone"}</div>
-                    <div className="text-xs text-slate-500">
-                      {item.email || "Sem e-mail"}
-                    </div>
+                    <div className="text-xs text-slate-500">{item.email || "Sem e-mail"}</div>
                   </td>
-
-                  <td className="px-5 py-4">
-                    {item.tipo_pessoa || "Não informado"}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    {item.perfil_cliente || "Não informado"}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <Badge>{item.status}</Badge>
-                  </td>
+                  <td className="px-5 py-4">{item.tipo_pessoa || "Não informado"}</td>
+                  <td className="px-5 py-4">{item.perfil_cliente || "Não informado"}</td>
+                  <td className="px-5 py-4"><Badge>{item.status}</Badge></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Input({ label, value, onChange, placeholder, type = "text", required = false }) {
+  return (
+    <div>
+      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">
+        {label}
+      </label>
+      <input
+        type={type}
+        value={value}
+        required={required}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-2xl border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-600 focus:border-cyan-400/60"
+      />
     </div>
   );
 }
@@ -529,23 +553,15 @@ function TabelaPropostas() {
                 <h3 className="font-bold text-white">{item.cliente}</h3>
                 <p className="text-sm text-slate-400">{item.seguro}</p>
               </div>
-
               <Badge>{item.status}</Badge>
             </div>
 
             <div className="mt-5 space-y-2 text-sm text-slate-300">
               <p>
-                Seguradora:{" "}
-                <span className="font-semibold text-white">
-                  {item.seguradora}
-                </span>
+                Seguradora: <span className="font-semibold text-white">{item.seguradora}</span>
               </p>
-
               <p>
-                Valor do prêmio:{" "}
-                <span className="font-semibold text-white">
-                  {moeda(item.premio)}
-                </span>
+                Valor do prêmio: <span className="font-semibold text-white">{moeda(item.premio)}</span>
               </p>
             </div>
           </div>
@@ -562,15 +578,9 @@ function ModuloSimples({ title, subtitle }) {
 
       <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-10 text-center shadow-2xl">
         <ShieldCheck className="mx-auto text-cyan-300" size={48} />
-
-        <h3 className="mt-4 text-xl font-bold text-white">
-          Módulo preparado para expansão
-        </h3>
-
+        <h3 className="mt-4 text-xl font-bold text-white">Módulo preparado para expansão</h3>
         <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">
-          Esta tela já está reservada no sistema. O próximo passo será conectar
-          formulários, Supabase e regras de negócio específicas para este
-          módulo.
+          Esta tela já está reservada no sistema. O próximo passo será conectar formulários, Supabase e regras de negócio específicas para este módulo.
         </p>
       </div>
     </div>
@@ -582,8 +592,23 @@ export default function App() {
   const [seguradosData, setSeguradosData] = useState([]);
   const [loadingSegurados, setLoadingSegurados] = useState(false);
   const [erroSegurados, setErroSegurados] = useState("");
+  const [mostrarFormularioSegurado, setMostrarFormularioSegurado] = useState(false);
+  const [salvandoSegurado, setSalvandoSegurado] = useState(false);
+  const [mensagemFormulario, setMensagemFormulario] = useState("");
 
- useEffect(() => {
+  const [formSegurado, setFormSegurado] = useState({
+    nome: "",
+    cpf_cnpj: "",
+    telefone: "",
+    email: "",
+    endereco: "",
+    data_nascimento: "",
+    tipo_pessoa: "Física",
+    perfil_cliente: "",
+    observacoes: "",
+    status: "Lead",
+  });
+
   async function carregarSegurados() {
     setLoadingSegurados(true);
     setErroSegurados("");
@@ -615,8 +640,66 @@ export default function App() {
     setLoadingSegurados(false);
   }
 
-  carregarSegurados();
-}, []);
+  useEffect(() => {
+    carregarSegurados();
+  }, []);
+
+  async function salvarSegurado(event) {
+    event.preventDefault();
+    setMensagemFormulario("");
+
+    if (!formSegurado.nome.trim()) {
+      setMensagemFormulario("Informe o nome do segurado.");
+      return;
+    }
+
+    if (!supabase) {
+      setMensagemFormulario("Supabase não configurado. Não foi possível salvar no banco.");
+      return;
+    }
+
+    setSalvandoSegurado(true);
+
+    const payload = {
+      nome: formSegurado.nome.trim(),
+      cpf_cnpj: formSegurado.cpf_cnpj.trim() || null,
+      telefone: formSegurado.telefone.trim() || null,
+      email: formSegurado.email.trim() || null,
+      endereco: formSegurado.endereco.trim() || null,
+      data_nascimento: formSegurado.data_nascimento || null,
+      tipo_pessoa: formSegurado.tipo_pessoa || "Física",
+      perfil_cliente: formSegurado.perfil_cliente.trim() || null,
+      observacoes: formSegurado.observacoes.trim() || null,
+      status: formSegurado.status || "Lead",
+    };
+
+    const { error } = await supabase.from("segurados").insert([payload]);
+
+    if (error) {
+      console.error("Erro ao salvar segurado:", error);
+      setMensagemFormulario("Erro ao salvar segurado. Confira as permissões RLS no Supabase.");
+      setSalvandoSegurado(false);
+      return;
+    }
+
+    setMensagemFormulario("Segurado cadastrado com sucesso!");
+
+    setFormSegurado({
+      nome: "",
+      cpf_cnpj: "",
+      telefone: "",
+      email: "",
+      endereco: "",
+      data_nascimento: "",
+      tipo_pessoa: "Física",
+      perfil_cliente: "",
+      observacoes: "",
+      status: "Lead",
+    });
+
+    await carregarSegurados();
+    setSalvandoSegurado(false);
+  }
 
   const activeItem = useMemo(
     () => menu.find((item) => item.id === active),
@@ -625,52 +708,51 @@ export default function App() {
 
   const pages = {
     dashboard: <Dashboard seguradosLista={seguradosData} />,
-
     segurados: (
       <TabelaSegurados
         seguradosLista={seguradosData}
         loading={loadingSegurados}
         erro={erroSegurados}
+        mostrarFormulario={mostrarFormularioSegurado}
+        setMostrarFormulario={setMostrarFormularioSegurado}
+        formSegurado={formSegurado}
+        setFormSegurado={setFormSegurado}
+        salvandoSegurado={salvandoSegurado}
+        mensagemFormulario={mensagemFormulario}
+        salvarSegurado={salvarSegurado}
       />
     ),
-
     propostas: <TabelaPropostas />,
-
     apolices: (
       <ModuloSimples
         title="Apólices"
         subtitle="Gestão de apólices emitidas, vigentes, canceladas, renovadas e a vencer."
       />
     ),
-
     renovacoes: (
       <ModuloSimples
         title="Renovações"
         subtitle="Alertas para apólices vencendo em 30 dias, 15 dias, vencidas e clientes sem renovação."
       />
     ),
-
     sinistros: (
       <ModuloSimples
         title="Sinistros"
         subtitle="Acompanhamento de ocorrências, documentação, status e apólice vinculada."
       />
     ),
-
     comissoes: (
       <ModuloSimples
         title="Comissões"
         subtitle="Controle de comissões previstas, recebidas, pendentes e canceladas."
       />
     ),
-
     seguradoras: (
       <ModuloSimples
         title="Seguradoras Parceiras"
         subtitle="Cadastro de seguradoras, contatos comerciais, ramos atendidos e comissão padrão."
       />
     ),
-
     crm: (
       <ModuloSimples
         title="CRM / Follow-up"
@@ -694,9 +776,7 @@ export default function App() {
           </div>
 
           <div>
-            <h1 className="text-lg font-black text-white">
-              Gestão Seguros 360
-            </h1>
+            <h1 className="text-lg font-black text-white">Gestão Seguros 360</h1>
             <p className="text-xs text-slate-500">Corretoras • Seguradoras</p>
           </div>
         </div>
